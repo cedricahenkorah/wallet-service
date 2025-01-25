@@ -1,5 +1,7 @@
 using DotNetEnv;
 using WalletService.API.Configurations;
+using WalletService.API.Repositories;
+using WalletService.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +27,11 @@ builder.Configuration["MongoDB:DatabaseName"] =
 // Register MongoDB context
 builder.Services.AddSingleton<MongoDbContext>();
 
+builder.Services.AddScoped<IWalletServices, WalletServices>();
+builder.Services.AddScoped<IWalletRepository, WalletRepository>();
+
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -35,6 +42,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapControllers();
 
 // Test MongoDB connection
 using (var scope = app.Services.CreateScope())
