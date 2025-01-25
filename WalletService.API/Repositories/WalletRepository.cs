@@ -19,9 +19,26 @@ namespace WalletService.API.Repositories
             return await _wallets.Find(wallet => wallet.Id == id).FirstOrDefaultAsync();
         }
 
-        async Task<List<Wallet>> IWalletRepository.GetWalletsAsync()
+        public async Task<List<Wallet>> GetUserWalletsAsync(
+            string phoneNumber,
+            int pageNumber,
+            int pageSize
+        )
         {
-            return await _wallets.Find(wallet => true).ToListAsync();
+            return await _wallets
+                .Find(wallet => wallet.Owner == phoneNumber)
+                .Skip((pageNumber - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
+        }
+
+        async Task<List<Wallet>> IWalletRepository.GetWalletsAsync(int pageNumber, int pageSize)
+        {
+            return await _wallets
+                .Find(wallet => true)
+                .Skip((pageNumber - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
         }
 
         public async Task<bool> RemoveWalletAsync(string id)
@@ -38,6 +55,11 @@ namespace WalletService.API.Repositories
         public async Task<int> GetWalletCountForUserAsync(string owner)
         {
             return (int)await _wallets.Find(wallet => wallet.Owner == owner).CountDocumentsAsync();
+        }
+
+        public async Task<int> GetTotalWalletCountAsync()
+        {
+            return (int)await _wallets.CountDocumentsAsync(_ => true);
         }
     }
 }

@@ -7,8 +7,10 @@ namespace WalletService.API.Repositories
         Task<Wallet> AddWalletAsync(Wallet wallet);
         Task<bool> RemoveWalletAsync(string id);
         Task<Wallet> GetWalletAsync(string id);
-        Task<List<Wallet>> GetWalletsAsync();
+        Task<List<Wallet>> GetWalletsAsync(int pageNumber, int pageSize);
+        Task<List<Wallet>> GetUserWalletsAsync(string phoneNumber, int pageNumber, int pageSize);
         Task<bool> WalletExistsAsync(string accountNumber);
         Task<int> GetWalletCountForUserAsync(string owner);
+        Task<int> GetTotalWalletCountAsync();
     }
 }

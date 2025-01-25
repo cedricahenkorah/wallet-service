@@ -8,6 +8,8 @@ namespace WalletService.API.Services
         Task<Wallet> AddWalletAsync(CreateWalletDto createWalletDto);
         Task<bool> RemoveWalletAsync(string id);
         Task<Wallet> GetWalletAsync(string id);
-        Task<List<Wallet>> GetWalletsAsync();
+        Task<List<Wallet>> GetUserWalletsAsync(string phoneNumbe, int pageNumber, int pageSizer);
+        Task<List<Wallet>> GetWalletsAsync(int pageNumber, int pageSize);
+        Task<int> GetTotalWalletCountAsync();
     }
 }

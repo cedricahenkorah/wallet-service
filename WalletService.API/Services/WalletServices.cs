@@ -74,6 +74,32 @@ namespace WalletService.API.Services
             return await _walletRepository.AddWalletAsync(wallet);
         }
 
+        public async Task<List<Wallet>> GetWalletsAsync(int pageNumber, int pageSize)
+        {
+            return await _walletRepository.GetWalletsAsync(pageNumber, pageSize);
+        }
+
+        public async Task<List<Wallet>> GetUserWalletsAsync(
+            string phoneNumber,
+            int pageNumber,
+            int pageSize
+        )
+        {
+            // check if phone number is valid
+            if (string.IsNullOrEmpty(phoneNumber))
+            {
+                throw new Exception("No phone number provided.");
+            }
+
+            // check if user exists
+            if (!await _walletRepository.WalletExistsAsync(phoneNumber))
+            {
+                throw new Exception("User does not exist.");
+            }
+
+            return await _walletRepository.GetUserWalletsAsync(phoneNumber, pageNumber, pageSize);
+        }
+
         public Task<Wallet> GetWalletAsync(string id)
         {
             // check if id is exists and is valid
@@ -89,11 +115,6 @@ namespace WalletService.API.Services
             }
 
             return _walletRepository.GetWalletAsync(id);
-        }
-
-        public async Task<List<Wallet>> GetWalletsAsync()
-        {
-            return await _walletRepository.GetWalletsAsync();
         }
 
         public async Task<bool> RemoveWalletAsync(string id)
@@ -112,6 +133,11 @@ namespace WalletService.API.Services
 
             return await _walletRepository.RemoveWalletAsync(id);
             throw new NotImplementedException();
+        }
+
+        public async Task<int> GetTotalWalletCountAsync()
+        {
+            return await _walletRepository.GetTotalWalletCountAsync();
         }
     }
 }
