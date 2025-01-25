@@ -71,8 +71,6 @@ namespace WalletService.API.Services
                 CreatedAt = DateTime.UtcNow,
             };
 
-            Console.WriteLine($"Type: {wallet.Type}, AccountScheme: {wallet.AccountScheme}");
-
             return await _walletRepository.AddWalletAsync(wallet);
         }
 
@@ -86,8 +84,21 @@ namespace WalletService.API.Services
             throw new NotImplementedException();
         }
 
-        public Task<bool> RemoveWalletAsync(string id)
+        public async Task<bool> RemoveWalletAsync(string id)
         {
+            // check if id is exists and is valid
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new Exception("No wallet id provided.");
+            }
+
+            // check if valid mongo id
+            if (!MongoDB.Bson.ObjectId.TryParse(id, out _))
+            {
+                throw new Exception("Invalid wallet id.");
+            }
+
+            return await _walletRepository.RemoveWalletAsync(id);
             throw new NotImplementedException();
         }
     }

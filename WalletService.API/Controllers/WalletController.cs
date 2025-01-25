@@ -17,11 +17,17 @@ namespace WalletService.API.Controllers
             try
             {
                 var wallet = await _walletServices.AddWalletAsync(createWalletDto);
+
+                if (wallet == null)
+                {
+                    return BadRequest();
+                }
+
                 return Ok(wallet);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, $"{ex.Message}");
             }
         }
 
@@ -31,11 +37,17 @@ namespace WalletService.API.Controllers
             try
             {
                 var result = await _walletServices.RemoveWalletAsync(id);
-                return Ok(result);
+
+                if (!result)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, $"{ex.Message}");
             }
         }
 
