@@ -1,4 +1,6 @@
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using WalletService.API.Configurations;
 using WalletService.API.Repositories;
 using WalletService.API.Services;
@@ -19,16 +21,46 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
 var mongoDatabaseName = Environment.GetEnvironmentVariable("MONGO_DATABASE_NAME");
 
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+
 builder.Configuration["MongoDB:ConnectionString"] =
     mongoConnectionString ?? throw new Exception("MONGO_CONNECTION_STRING not set.");
 builder.Configuration["MongoDB:DatabaseName"] =
     mongoDatabaseName ?? throw new Exception("MONGO_DATABASE_NAME not set.");
+builder.Configuration["Jwt:Secret"] = jwtSecret ?? throw new Exception("JWT_SECRET not set.");
+builder.Configuration["Jwt:Issuer"] = jwtIssuer ?? throw new Exception("JWT_ISSUER not set.");
+builder.Configuration["Jwt:Audience"] = jwtAudience ?? throw new Exception("JWT_AUDIENCE not set.");
 
 // Register MongoDB context
 builder.Services.AddSingleton<MongoDbContext>();
 
+// Register JWT authentication
+builder
+    .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(jwtSecret)
+            ),
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<IWalletServices, WalletServices>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddControllers();
 
@@ -42,6 +74,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

@@ -15,6 +15,7 @@ namespace WalletService.API.Configurations
         }
 
         public IMongoCollection<Wallet> Wallets => _database.GetCollection<Wallet>("Wallets");
+        public IMongoCollection<User> Users => _database.GetCollection<User>("Users");
 
         public bool TestConnection()
         {
