@@ -76,12 +76,24 @@ namespace WalletService.API.Services
 
         public Task<Wallet> GetWalletAsync(string id)
         {
-            throw new NotImplementedException();
+            // check if id is exists and is valid
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new Exception("No wallet id provided.");
+            }
+
+            // check if valid mongo id
+            if (!MongoDB.Bson.ObjectId.TryParse(id, out _))
+            {
+                throw new Exception("Invalid wallet id.");
+            }
+
+            return _walletRepository.GetWalletAsync(id);
         }
 
-        public Task<List<Wallet>> GetWalletsAsync()
+        public async Task<List<Wallet>> GetWalletsAsync()
         {
-            throw new NotImplementedException();
+            return await _walletRepository.GetWalletsAsync();
         }
 
         public async Task<bool> RemoveWalletAsync(string id)

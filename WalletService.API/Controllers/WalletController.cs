@@ -57,11 +57,17 @@ namespace WalletService.API.Controllers
             try
             {
                 var wallet = await _walletServices.GetWalletAsync(id);
+
+                if (wallet == null)
+                {
+                    return NotFound();
+                }
+
                 return Ok(wallet);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, $"{ex.Message}");
             }
         }
 
@@ -71,11 +77,17 @@ namespace WalletService.API.Controllers
             try
             {
                 var wallets = await _walletServices.GetWalletsAsync();
+
+                if (wallets == null)
+                {
+                    return NotFound();
+                }
+
                 return Ok(wallets);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, $"{ex.Message}");
             }
         }
     }
