@@ -8,11 +8,15 @@ using WalletService.API.Repositories;
 
 namespace WalletService.API.Services
 {
-    public class AuthService(IUserRepository userRepository, IConfiguration configuration)
-        : IAuthService
+    public class AuthService(
+        IUserRepository userRepository,
+        IConfiguration configuration,
+        ILogger<AuthService> logger
+    ) : IAuthService
     {
         private readonly IUserRepository _userRepository = userRepository;
         private readonly IConfiguration _configuration = configuration;
+        private readonly ILogger<AuthService> _logger = logger;
 
         public async Task<string> LoginAsync(UserDto userDto)
         {
@@ -26,6 +30,10 @@ namespace WalletService.API.Services
             // check if password matches
             if (!BCrypt.Net.BCrypt.Verify(userDto.Password, user.PasswordHash))
             {
+                _logger.LogWarning(
+                    "[LoginAsync] Invalid password for user: {PhoneNumber}",
+                    userDto.PhoneNumber
+                );
                 throw new Exception("Invalid password.");
             }
 
@@ -40,12 +48,20 @@ namespace WalletService.API.Services
             // check if user with the same phone number already exists
             if (await _userRepository.GetUserByPhoneNumberAsync(userDto.PhoneNumber) != null)
             {
+                _logger.LogWarning(
+                    "[RegisterAsync] User with the same phone number already exists: {PhoneNumber}",
+                    userDto.PhoneNumber
+                );
                 throw new Exception("User with the same phone number already exists.");
             }
 
             // check if length of password is less than 6
             if (userDto.Password.Length < 6)
             {
+                _logger.LogWarning(
+                    "[RegisterAsync] Password length is less than 6 characters: {PhoneNumber}",
+                    userDto.PhoneNumber
+                );
                 throw new Exception("Password length should be at least 6 characters.");
             }
 
@@ -67,6 +83,13 @@ namespace WalletService.API.Services
 
         private string GenerateJwtToken(User user)
         {
+            ArgumentNullException.ThrowIfNull(user);
+
+            _logger.LogInformation(
+                "[GenerateJwtToken] Generating jwt token for user: {PhoneNumber}",
+                user.PhoneNumber
+            );
+
             var jwtKey =
                 _configuration["Jwt:Secret"] ?? throw new ArgumentNullException("Jwt:Secret");
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
@@ -80,6 +103,10 @@ namespace WalletService.API.Services
                 signingCredentials: credentials
             );
 
+            _logger.LogInformation(
+                "[GenerateJwtToken] Jwt token generated successfully for user: {PhoneNumber}",
+                user.PhoneNumber
+            );
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
