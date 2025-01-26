@@ -73,6 +73,21 @@ namespace WalletService.API.Services
                 throw new Exception("Wallet with the same account number already exists.");
             }
 
+            // prevent duplicate wallet additions for card (check if first 6 digits already exists)
+            if (
+                createWalletDto.Type == WalletType.Card
+                && await _walletRepository.WalletExistsAsync(
+                    createWalletDto.AccountNumber.Substring(0, 6)
+                )
+            )
+            {
+                _logger.LogWarning(
+                    "[AddWalletAsync] Wallet with the same card number already exists: {AccountNumber}",
+                    createWalletDto.AccountNumber
+                );
+                throw new Exception("Wallet with the same card number already exists.");
+            }
+
             // a single user should not have more than 5 wallets
             if (await _walletRepository.GetWalletCountForUserAsync(createWalletDto.Owner) >= 5)
             {
