@@ -5,11 +5,15 @@ namespace WalletService.API.Services
 {
     public interface IWalletServices
     {
-        Task<Wallet> AddWalletAsync(CreateWalletDto createWalletDto);
-        Task<bool> RemoveWalletAsync(string id);
-        Task<Wallet> GetWalletAsync(string id);
-        Task<List<Wallet>> GetUserWalletsAsync(string phoneNumbe, int pageNumber, int pageSizer);
-        Task<List<Wallet>> GetWalletsAsync(int pageNumber, int pageSize);
+        Task<ApiResponse<Wallet>> AddWalletAsync(CreateWalletDto createWalletDto);
+        Task<ApiResponse<bool>> RemoveWalletAsync(string id);
+        Task<ApiResponse<Wallet>> GetWalletAsync(string id);
+        Task<ApiResponse<PaginatedResponse<Wallet>>> GetUserWalletsAsync(
+            int pageNumber,
+            int pageSizer
+        );
+        Task<ApiResponse<PaginatedResponse<Wallet>>> GetWalletsAsync(int pageNumber, int pageSize);
         Task<int> GetTotalWalletCountAsync();
+        string GetUserPhoneNumber();
     }
 }

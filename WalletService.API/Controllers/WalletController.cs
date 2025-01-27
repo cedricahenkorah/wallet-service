@@ -10,14 +10,11 @@ namespace WalletService.API.Controllers
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
-    public class WalletController(
-        IWalletServices walletServices,
-        IWalletRepository walletRepository,
-        ILogger<WalletController> logger
-    ) : ControllerBase
+    public class WalletController(IWalletServices walletServices, ILogger<WalletController> logger)
+        : ControllerBase
     {
         private readonly IWalletServices _walletServices = walletServices;
-        private readonly IWalletRepository _walletRepository = walletRepository;
+
         private readonly ILogger<WalletController> _logger = logger;
 
         private string GetUserPhoneNumber()
@@ -35,32 +32,9 @@ namespace WalletService.API.Controllers
             );
             try
             {
-                // check if the authenticated user is the owner of the wallet
-                if (createWalletDto.Owner != GetUserPhoneNumber())
-                {
-                    _logger.LogWarning(
-                        "[AddWalletAsync] Unauthorized attempt to create wallet for user: {PhoneNumber}",
-                        createWalletDto.Owner
-                    );
-                    return Unauthorized();
-                }
+                var response = await _walletServices.AddWalletAsync(createWalletDto);
 
-                var wallet = await _walletServices.AddWalletAsync(createWalletDto);
-
-                if (wallet == null)
-                {
-                    _logger.LogWarning(
-                        "[AddWalletAsync] Wallet creation failed for user: {PhoneNumber}",
-                        createWalletDto.Owner
-                    );
-                    return BadRequest();
-                }
-
-                _logger.LogInformation(
-                    "[AddWalletAsync] Wallet created successfully for user: {PhoneNumber}",
-                    createWalletDto.Owner
-                );
-                return Ok(wallet);
+                return StatusCode(int.Parse(response.Code), response);
             }
             catch (Exception ex)
             {
@@ -83,31 +57,9 @@ namespace WalletService.API.Controllers
 
             try
             {
-                // check if the authenticated user is the owner of the wallet
-                var wallet = await _walletServices.GetWalletAsync(id);
+                var response = await _walletServices.RemoveWalletAsync(id);
 
-                if (wallet == null || wallet.Owner != GetUserPhoneNumber())
-                {
-                    _logger.LogWarning(
-                        "[RemoveWalletAsync] Unauthorized attempt to remove wallet: {WalletId}",
-                        id
-                    );
-                    return Unauthorized();
-                }
-
-                var result = await _walletServices.RemoveWalletAsync(id);
-
-                if (!result)
-                {
-                    _logger.LogWarning("[RemoveWalletAsync] Wallet removal failed: {WalletId}", id);
-                    return NotFound();
-                }
-
-                _logger.LogInformation(
-                    "[RemoveWalletAsync] Wallet removed successfully: {WalletId}",
-                    id
-                );
-                return NoContent();
+                return StatusCode(int.Parse(response.Code), response);
             }
             catch (Exception ex)
             {
@@ -126,19 +78,9 @@ namespace WalletService.API.Controllers
             _logger.LogInformation("[GetWalletAsync] Attempting to get wallet: {WalletId}", id);
             try
             {
-                var wallet = await _walletServices.GetWalletAsync(id);
+                var response = await _walletServices.GetWalletAsync(id);
 
-                if (wallet == null)
-                {
-                    _logger.LogWarning("[GetWalletAsync] Wallet not found: {WalletId}", id);
-                    return NotFound();
-                }
-
-                _logger.LogInformation(
-                    "[GetWalletAsync] Wallet retrieved successfully: {WalletId}",
-                    id
-                );
-                return Ok(wallet);
+                return StatusCode(int.Parse(response.Code), response);
             }
             catch (Exception ex)
             {
@@ -161,26 +103,9 @@ namespace WalletService.API.Controllers
             _logger.LogInformation("[GetWalletsAsync] Attempting to get wallets.");
             try
             {
-                var wallets = await _walletServices.GetWalletsAsync(pageNumber, pageSize);
+                var response = await _walletServices.GetWalletsAsync(pageNumber, pageSize);
 
-                if (wallets == null || wallets.Count == 0)
-                {
-                    _logger.LogWarning("[GetWalletsAsync] No wallets found.");
-                    return NotFound("No wallets found.");
-                }
-
-                var totalCount = await _walletServices.GetTotalWalletCountAsync();
-
-                var response = new
-                {
-                    TotalCount = totalCount,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    Wallets = wallets,
-                };
-
-                _logger.LogInformation("[GetWalletsAsync] Wallets retrieved successfully.");
-                return Ok(response);
+                return StatusCode(int.Parse(response.Code), response);
             }
             catch (Exception ex)
             {
@@ -197,52 +122,9 @@ namespace WalletService.API.Controllers
         {
             try
             {
-                var phoneNumber = GetUserPhoneNumber();
+                var response = await _walletServices.GetUserWalletsAsync(pageNumber, pageSize);
 
-                _logger.LogInformation(
-                    "[GetUserWalletsAsync] Attempting to get wallets for user: {PhoneNumber}",
-                    phoneNumber
-                );
-
-                if (string.IsNullOrEmpty(phoneNumber))
-                {
-                    _logger.LogWarning(
-                        "[GetUserWalletsAsync] Unauthorized attempt to get wallets for user: {PhoneNumber}",
-                        phoneNumber
-                    );
-                    return Unauthorized();
-                }
-
-                var wallets = await _walletServices.GetUserWalletsAsync(
-                    phoneNumber,
-                    pageNumber,
-                    pageSize
-                );
-
-                if (wallets == null || wallets.Count == 0)
-                {
-                    _logger.LogWarning(
-                        "[GetUserWalletsAsync] No wallets found for user: {PhoneNumber}",
-                        phoneNumber
-                    );
-                    return NotFound("No wallets found for this user.");
-                }
-
-                var totalCount = await _walletRepository.GetWalletCountForUserAsync(phoneNumber);
-
-                var response = new
-                {
-                    TotalCount = totalCount,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    Wallets = wallets,
-                };
-
-                _logger.LogInformation(
-                    "[GetUserWalletsAsync] Wallets retrieved successfully for user: {PhoneNumber}",
-                    phoneNumber
-                );
-                return Ok(response);
+                return StatusCode(int.Parse(response.Code), response);
             }
             catch (Exception ex)
             {
