@@ -69,7 +69,7 @@ namespace WalletService.API.Services
                         userDto.PhoneNumber
                     );
                     return new ApiResponse<string>(
-                        code: $"{(int)HttpStatusCode.InternalServerError}",
+                        code: $"{(int)HttpStatusCode.NotFound}",
                         message: "Failed to generate jwt token."
                     );
                 }
