@@ -174,7 +174,7 @@ namespace WalletService.API.Services
             }
         }
 
-        private string GenerateJwtToken(User user)
+        public string GenerateJwtToken(User user)
         {
             ArgumentNullException.ThrowIfNull(user);
 
