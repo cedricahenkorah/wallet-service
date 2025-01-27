@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
@@ -11,38 +12,99 @@ namespace WalletService.API.Services
     public class AuthService(
         IUserRepository userRepository,
         IConfiguration configuration,
-        ILogger<AuthService> logger
+        ILogger<AuthService> logger,
+        IHttpContextAccessor httpContextAccessor
     ) : IAuthService
     {
         private readonly IUserRepository _userRepository = userRepository;
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<AuthService> _logger = logger;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
-        public async Task<string> LoginAsync(UserDto userDto)
+        public async Task<ApiResponse<string>> LoginAsync(UserDto userDto)
         {
+            _logger.LogInformation(
+                "[LoginAsync] Attempting to login user: {PhoneNumber}",
+                userDto.PhoneNumber
+            );
+
             ArgumentNullException.ThrowIfNull(userDto);
 
-            // check if user exists
-            var user =
-                await _userRepository.GetUserByPhoneNumberAsync(userDto.PhoneNumber)
-                ?? throw new Exception("User not found.");
-
-            // check if password matches
-            if (!BCrypt.Net.BCrypt.Verify(userDto.Password, user.PasswordHash))
+            try
             {
-                _logger.LogWarning(
-                    "[LoginAsync] Invalid password for user: {PhoneNumber}",
+                var user = await _userRepository.GetUserByPhoneNumberAsync(userDto.PhoneNumber);
+
+                if (user == null)
+                {
+                    _logger.LogWarning(
+                        "[LoginAsync] User not found: {PhoneNumber}",
+                        userDto.PhoneNumber
+                    );
+                    return new ApiResponse<string>(
+                        code: $"{(int)HttpStatusCode.NotFound}",
+                        message: "User not found."
+                    );
+                }
+
+                // check if password matches
+                if (!BCrypt.Net.BCrypt.Verify(userDto.Password, user.PasswordHash))
+                {
+                    _logger.LogWarning(
+                        "[LoginAsync] Invalid password for user: {PhoneNumber}",
+                        userDto.PhoneNumber
+                    );
+                    return new ApiResponse<string>(
+                        code: $"{(int)HttpStatusCode.BadRequest}",
+                        message: "Invalid password."
+                    );
+                }
+
+                // generate jwt token
+                var token = GenerateJwtToken(user);
+
+                if (token == null)
+                {
+                    _logger.LogWarning(
+                        "[LoginAsync] Failed to generate jwt token for user: {PhoneNumber}",
+                        userDto.PhoneNumber
+                    );
+                    return new ApiResponse<string>(
+                        code: $"{(int)HttpStatusCode.InternalServerError}",
+                        message: "Failed to generate jwt token."
+                    );
+                }
+
+                _logger.LogInformation(
+                    "[LoginAsync] User logged in successfully: {PhoneNumber}",
                     userDto.PhoneNumber
                 );
-                throw new Exception("Invalid password.");
-            }
 
-            // generate jwt token
-            return GenerateJwtToken(user);
+                return new ApiResponse<string>(
+                    code: $"{(int)HttpStatusCode.OK}",
+                    message: "User logged in successfully.",
+                    data: token
+                );
+            }
+            catch (System.Exception)
+            {
+                _logger.LogError(
+                    "[LoginAsync] An error occurred while logging in user: {PhoneNumber}",
+                    userDto.PhoneNumber
+                );
+                return new ApiResponse<string>(
+                    code: $"{(int)HttpStatusCode.InternalServerError}",
+                    message: "An error occurred while logging in user."
+                );
+            }
         }
 
-        public async Task<UserResponseDto> RegisterAsync(UserDto userDto)
+        public async Task<ApiResponse<UserResponseDto>> RegisterAsync(UserDto userDto)
         {
+            _logger.LogInformation(
+                "[RegisterAsync] Attempting to register user: {PhoneNumber}",
+                userDto.PhoneNumber
+            );
+
             ArgumentNullException.ThrowIfNull(userDto);
 
             // check if user with the same phone number already exists
@@ -52,7 +114,11 @@ namespace WalletService.API.Services
                     "[RegisterAsync] User with the same phone number already exists: {PhoneNumber}",
                     userDto.PhoneNumber
                 );
-                throw new Exception("User with the same phone number already exists.");
+
+                return new ApiResponse<UserResponseDto>(
+                    code: $"{(int)HttpStatusCode.BadRequest}",
+                    message: "User with the same phone number already exists."
+                );
             }
 
             // check if length of password is less than 6
@@ -62,7 +128,11 @@ namespace WalletService.API.Services
                     "[RegisterAsync] Password length is less than 6 characters: {PhoneNumber}",
                     userDto.PhoneNumber
                 );
-                throw new Exception("Password length should be at least 6 characters.");
+
+                return new ApiResponse<UserResponseDto>(
+                    code: $"{(int)HttpStatusCode.BadRequest}",
+                    message: "Password length should be at least 6 characters."
+                );
             }
 
             // hash password
@@ -76,9 +146,32 @@ namespace WalletService.API.Services
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await _userRepository.AddUserAsync(user);
+            try
+            {
+                await _userRepository.AddUserAsync(user);
 
-            return new UserResponseDto { Id = user.Id, PhoneNumber = user.PhoneNumber };
+                _logger.LogInformation(
+                    "[RegisterAsync] User registered successfully: {PhoneNumber}",
+                    userDto.PhoneNumber
+                );
+
+                return new ApiResponse<UserResponseDto>(
+                    code: $"{(int)HttpStatusCode.OK}",
+                    message: "User registered successfully.",
+                    data: new UserResponseDto { Id = user.Id, PhoneNumber = user.PhoneNumber }
+                );
+            }
+            catch (System.Exception)
+            {
+                _logger.LogError(
+                    "[RegisterAsync] An error occurred while registering user: {PhoneNumber}",
+                    userDto.PhoneNumber
+                );
+                return new ApiResponse<UserResponseDto>(
+                    code: $"{(int)HttpStatusCode.InternalServerError}",
+                    message: "An error occurred while registering user."
+                );
+            }
         }
 
         private string GenerateJwtToken(User user)

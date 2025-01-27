@@ -24,20 +24,7 @@ namespace WalletService.API.Controllers
             {
                 var result = await _authService.RegisterAsync(userDto);
 
-                if (result == null)
-                {
-                    _logger.LogWarning(
-                        "[RegisterAsync] User registration failed: {PhoneNumber}",
-                        userDto.PhoneNumber
-                    );
-                    return BadRequest();
-                }
-
-                _logger.LogInformation(
-                    "[RegisterAsync] User registered successfully: {PhoneNumber}",
-                    userDto.PhoneNumber
-                );
-                return Ok(result);
+                return StatusCode(int.Parse(result.Code), result);
             }
             catch (Exception ex)
             {
@@ -59,22 +46,9 @@ namespace WalletService.API.Controllers
             );
             try
             {
-                var token = await _authService.LoginAsync(userDto);
+                var response = await _authService.LoginAsync(userDto);
 
-                if (token == null)
-                {
-                    _logger.LogWarning(
-                        "[LoginAsync] Unauthorized. User login failed: {PhoneNumber}",
-                        userDto.PhoneNumber
-                    );
-                    return Unauthorized();
-                }
-
-                _logger.LogInformation(
-                    "[LoginAsync] User logged in successfully: {PhoneNumber}",
-                    userDto.PhoneNumber
-                );
-                return Ok(token);
+                return StatusCode(int.Parse(response.Code), response);
             }
             catch (Exception ex)
             {
