@@ -287,23 +287,10 @@ namespace WalletService.API.Services
             // check if phone number is valid
             if (string.IsNullOrEmpty(phoneNumber))
             {
-                _logger.LogWarning("[GetUserWalletsAsync] No phone number provided.");
+                _logger.LogWarning("[GetUserWalletsAsync] Unauthorized attempt to get wallets");
                 return new ApiResponse<PaginatedResponse<Wallet>>(
-                    code: $"{(int)HttpStatusCode.NotFound}",
-                    message: "No phone number provided"
-                );
-            }
-
-            // check if user exists
-            if (!await _walletRepository.WalletExistsAsync(phoneNumber))
-            {
-                _logger.LogWarning(
-                    "[GetUserWalletsAsync] User does not exist: {PhoneNumber}",
-                    phoneNumber
-                );
-                return new ApiResponse<PaginatedResponse<Wallet>>(
-                    code: $"{(int)HttpStatusCode.NotFound}",
-                    message: "User does not exist"
+                    code: $"{(int)HttpStatusCode.Unauthorized}",
+                    message: "Unauthorized attempt to get wallets"
                 );
             }
 
@@ -411,6 +398,20 @@ namespace WalletService.API.Services
             {
                 var wallet = await _walletRepository.GetWalletAsync(id);
 
+                // do not allow users to get wallets that do not belong to them
+                if (wallet?.Owner != GetUserPhoneNumber())
+                {
+                    _logger.LogWarning(
+                        "[GetWalletAsync] Unauthorized attempt to get wallet: {WalletId}",
+                        id
+                    );
+
+                    return new ApiResponse<Wallet>(
+                        code: $"{(int)HttpStatusCode.Unauthorized}",
+                        message: "Unauthorized attempt to get wallet"
+                    );
+                }
+
                 if (wallet == null)
                 {
                     _logger.LogWarning("[GetWalletAsync] Wallet not found: {WalletId}", id);
@@ -447,22 +448,6 @@ namespace WalletService.API.Services
 
         public async Task<ApiResponse<bool>> RemoveWalletAsync(string id)
         {
-            // check ift the authenticated user is the owner of the wallet
-            var wallet = await GetWalletAsync(id);
-
-            if (wallet == null || wallet.Data?.Owner != GetUserPhoneNumber())
-            {
-                _logger.LogWarning(
-                    "[RemoveWalletAsync] Unauthorized attempt to remove wallet: {WalletId}",
-                    id
-                );
-
-                return new ApiResponse<bool>(
-                    code: $"{(int)HttpStatusCode.Unauthorized}",
-                    message: "Unauthorized attempt to remove wallet"
-                );
-            }
-
             // check if id is exists and is valid
             if (string.IsNullOrEmpty(id))
             {
@@ -485,6 +470,31 @@ namespace WalletService.API.Services
 
             try
             {
+                // check if the authenticated user is the owner of the wallet
+                var wallet = await GetWalletAsync(id);
+
+                if (wallet == null)
+                {
+                    _logger.LogWarning("[RemoveWalletAsync] Wallet not found: {WalletId}", id);
+                    return new ApiResponse<bool>(
+                        code: $"{(int)HttpStatusCode.NotFound}",
+                        message: "Wallet not found"
+                    );
+                }
+
+                if (wallet.Data?.Owner != GetUserPhoneNumber())
+                {
+                    _logger.LogWarning(
+                        "[RemoveWalletAsync] Unauthorized attempt to remove wallet: {WalletId}",
+                        id
+                    );
+
+                    return new ApiResponse<bool>(
+                        code: $"{(int)HttpStatusCode.Unauthorized}",
+                        message: "Unauthorized attempt to remove wallet"
+                    );
+                }
+
                 var result = await _walletRepository.RemoveWalletAsync(id);
 
                 if (!result)
