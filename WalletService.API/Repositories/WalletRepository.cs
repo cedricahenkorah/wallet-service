@@ -32,7 +32,7 @@ namespace WalletService.API.Repositories
                 .ToListAsync();
         }
 
-        async Task<List<Wallet>> IWalletRepository.GetWalletsAsync(int pageNumber, int pageSize)
+        public async Task<List<Wallet>> GetWalletsAsync(int pageNumber, int pageSize)
         {
             return await _wallets
                 .Find(wallet => true)
