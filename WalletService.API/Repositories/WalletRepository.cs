@@ -61,5 +61,10 @@ namespace WalletService.API.Repositories
         {
             return (int)await _wallets.CountDocumentsAsync(_ => true);
         }
+
+        public async Task<bool> WalletExistsName(string name)
+        {
+            return await _wallets.Find(wallet => wallet.Name == name).AnyAsync();
+        }
     }
 }

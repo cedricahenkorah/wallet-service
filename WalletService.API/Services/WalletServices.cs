@@ -120,6 +120,19 @@ namespace WalletService.API.Services
                 );
             }
 
+            if (await _walletRepository.WalletExistsName(createWalletDto.Name))
+            {
+                _logger.LogWarning(
+                    "[AddWalletAsync] Wallet with the same name already exists: {Name}",
+                    createWalletDto.Name
+                );
+
+                return new ApiResponse<Wallet>(
+                    code: $"{(int)HttpStatusCode.Conflict}",
+                    message: "Wallet with the same name already exists"
+                );
+            }
+
             // prevent duplicate wallet additions for card (check if first 6 digits already exists)
             if (
                 createWalletDto.Type == WalletType.Card

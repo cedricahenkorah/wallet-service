@@ -10,6 +10,7 @@ namespace WalletService.API.Repositories
         Task<List<Wallet>> GetWalletsAsync(int pageNumber, int pageSize);
         Task<List<Wallet>> GetUserWalletsAsync(string phoneNumber, int pageNumber, int pageSize);
         Task<bool> WalletExistsAsync(string accountNumber);
+        Task<bool> WalletExistsName(string name);
         Task<int> GetWalletCountForUserAsync(string owner);
         Task<int> GetTotalWalletCountAsync();
     }
