@@ -5,6 +5,7 @@ using WalletService.API.Configurations;
 using WalletService.API.Repositories;
 using WalletService.API.Services;
 
+// initialize a WebApplicationBuilder configuring the app and setting up dependencies.
 var builder = WebApplication.CreateBuilder(args);
 
 Env.Load();
@@ -25,6 +26,7 @@ var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
 
+// Ensures required environment variables are set before the application starts.
 builder.Configuration["MongoDB:ConnectionString"] =
     mongoConnectionString ?? throw new Exception("MONGO_CONNECTION_STRING not set.");
 builder.Configuration["MongoDB:DatabaseName"] =
@@ -71,6 +73,7 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Logging.AddEventSourceLogger();
 
+// Builds the application instance.
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
